@@ -1,0 +1,88 @@
+#looping through - STEP 1
+setwd("H:/My Documents/Pers/NHL/DATA/REFS/2014")
+
+gamenumber <- 0
+for(i in 1:1250) {
+  g <- nchar(i)
+  if(g==1) { 
+    nr <- paste0("000", i)
+  } else if (g==2) {
+    nr <- paste0("00", i)
+  } else if (g==3) {
+    nr <- paste0("0", i)
+  } else nr <- paste0("", i)
+  
+  gamenumber <- paste("game201402", nr, sep = "")
+  gamelist <- paste("L", gamenumber, sep = "")
+  gamelinknumber <- paste("201402", nr, sep = "")
+  gamelink <- paste("http://statsapi.web.nhl.com/api/v1/game/",gamelinknumber,"/feed/live", sep="")
+  
+  assign(gamenumber, fromJSON(gamelink))
+    #game2017020675 <- fromJSON("http://statsapi.web.nhl.com/api/v1/game/2017020043/feed/live") #manual try
+  
+  mylist99 <- get(gamenumber)$liveData 
+  
+ 
+  TEST1 <- NROW(mylist99) #read all plays
+  FILTER_PENALTY <- unlist(mylist99[[3]]) #read the penaltyPlays branch
+  FPTEST <- NROW(FILTER_PENALTY) # count the rows in the penaltyPlays 
+  if (FPTEST>0) { # If there are no penatly plays skip to next file, else continue with the next line of code
+  
+  # now I want only thos plays that are listed in the penaltyPlays branch (stored in FILTER_PENALTY)
+    
+      
+  
+      if (TEST1>0) { # test if the record in not empty
+        
+        #head(unlist(mylist99[[1]]))
+        
+        tryCatch(gameslistcsv <-
+                   data.frame(unlist(mylist99[[1]][[1]][[1]][[1]]) #result.event
+                              ,unlist(mylist99[[1]][[1]][[1]][[4]]) #result.description
+                              ,unlist(mylist99[[1]][[1]][[1]][[5]]) #result.secondaryType
+                              ,unlist(mylist99[[1]][[1]][[1]][[9]]) #result.penaltySeverity
+                              ,unlist(mylist99[[1]][[1]][[1]][[10]]) #result.penaltyMinutes
+                              ,unlist(mylist99[[1]][[1]][[5]][[2]]) #about.team.name (event team)
+                              ,unlist(mylist99[[1]][[1]][[2]][[3]]) #about.period
+                              ,unlist(mylist99[[1]][[1]][[2]][[6]]) #about.periodtime
+                              ,unlist(mylist99[[1]][[1]][[2]][[8]]) #about.dateTime                              
+                              ,unlist(mylist99[[1]][[1]][[2]][[9]][[1]]) #about.goals.away
+                              ,unlist(mylist99[[1]][[1]][[2]][[9]][[2]]) #about.goals.home
+                              ,as.integer(unlist(mylist99[[1]][[1]][[3]][[1]])) #coordinates.X
+                              ,as.integer(unlist(mylist99[[1]][[1]][[3]][[2]])) #coordinates.y
+                              ,unlist(mylist99[[3]][[2]][[1]][[2]][[1]]) #boxscore.officials.ref1
+                              ,unlist(mylist99[[3]][[2]][[1]][[2]][[2]]) #boxscore.officials.ref1
+                              ,unlist(mylist99[[3]][[2]][[1]][[2]][[3]]) #boxscore.officials.line1
+                              ,unlist(mylist99[[3]][[2]][[1]][[2]][[4]]) #boxscore.officials.line1
+                              ,unlist(mylist99[[3]][[1]][[1]][[1]][[2]]) #boxscore.teams.away
+                              ,unlist(mylist99[[3]][[1]][[2]][[1]][[2]]) #boxscore.team.home
+                              ,unlist(mylist99[[3]][[1]][[1]][[1]][[4]]) #boxscore.teams.awayAbr
+                              ,unlist(mylist99[[3]][[1]][[2]][[1]][[4]]) #boxscore.team.homeAbr
+                              ,unlist(mylist99[[3]][[1]][[1]][[10]][[1]][[1]]) #boxscore.teams.awaycoach
+                              ,unlist(mylist99[[3]][[1]][[2]][[10]][[1]][[1]]) #boxscore.team.homecoach
+                              
+                   ), error = function(e) print(paste("E1",gamenumber, sep = "")))
+        
+        
+        
+        }
+        rownames(gameslistcsv) <- NULL # remove automatically created rownames
+        gameslistcsv$newcolumn<-gamelist
+        #tryCatch(colnames(gameslistcsv)[25] <- "Sourcegame", error = function(e) print("T"))
+        tryCatch(names(gameslistcsv) <- c("Event", "Description", "SecType", "Severity", "penMin", "EventTeam", "Period", "periodTime", "dateTime"
+                                 , "awayGoals", "homeGoals", "X", "Y", "ref1", "ref2", "lin1", "lin2", "awayTeam","homeTeam", "awayAbr"
+                                 , "homeAbr", "awayCoach", "homeCoach", "SourceGame"), error = function(e) print(paste("E2",gamelist))) # rename the headers
+        
+       # TESTnrRecs <- NROW(gameslistcsv)
+        
+        #for (nrow in 1:TESTnrRecs) {
+        #if (head(gameslistcsv[[1]]),nrow) == "Penalty") { print("yoohoo") }
+        #}
+        
+        write.csv(gameslistcsv, file = paste(gamenumber,".csv",sep = ""), row.names = FALSE) # write the file to csv (without automatically created row names) in the workdirectory
+        #system.time(5)
+        
+        gameslistcsv <- "error with source"
+      
+  }
+}
